@@ -12,7 +12,7 @@
 |  Page Directory     |   
 
 
-！[image ](https://github.com/XihuiZhang/6.828-os-lab/blob/master/286774-73004835aee1e4bc.png)
+！[image](https://upload-images.jianshu.io/upload_images/286774-73004835aee1e4bc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1000)
 
 >> 在启用分页前，页目录所在的物理页面的首地址需要存放到 CR3 寄存器中
 

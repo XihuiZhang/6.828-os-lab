@@ -1,0 +1,26 @@
+mit的操作系统实验中需要看懂gcc_inline_assembly的代码，所以需要学习一下简单的入门知识  
+###：gcc_inline_assembly 使用的是AT&T的语法  
+     1：源————目标的代买顺序  
+     2：寄存器的前面要加上%： %eax，%esp  
+     3：在AT&T中要表示一个 数值而不是表示一个地址需要加上符号$  
+     4: 操作数的位宽是由operand的最后一位字符决定的，后缀是 b——8bit, w——16bit，l——32bit；    
+     5：在intel 汇编中基础寄存器 enclosed in[],而在AT&T使用的是（）  
+     INTEL : section:[base + index*scale + disp], which changes  
+     AT&T : section:disp(base, index, scale) in AT&T.
+```
+     +------------------------------+------------------------------------+
+|       Intel Code             |      AT&T Code                     |
++------------------------------+------------------------------------+
+| mov     eax,1                |  movl    $1,%eax                   |   
+| mov     ebx,0ffh             |  movl    $0xff,%ebx                |   
+| int     80h                  |  int     $0x80                     |   
+| mov     ebx, eax             |  movl    %eax, %ebx                |
+| mov     eax,[ecx]            |  movl    (%ecx),%eax               |
+| mov     eax,[ebx+3]          |  movl    3(%ebx),%eax              | 
+| mov     eax,[ebx+20h]        |  movl    0x20(%ebx),%eax           |
+| add     eax,[ebx+ecx*2h]     |  addl    (%ebx,%ecx,0x2),%eax      |
+| lea     eax,[ebx+ecx]        |  leal    (%ebx,%ecx),%eax          |
+| sub     eax,[ebx+ecx*4h-20h] |  subl    -0x20(%ebx,%ecx,0x4),%eax |
++------------------------------+------------------------------------+
+```
+     

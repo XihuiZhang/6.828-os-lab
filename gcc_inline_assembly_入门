@@ -1,14 +1,14 @@
-mit的操作系统实验中需要看懂gcc_inline_assembly的代码，所以需要学习一下简单的入门知识  
-###：gcc_inline_assembly 使用的是AT&T的语法  
+##   gcc_inline_assembly简单入门知识 
+###：gcc_i操作系统实验中需要看nline_assembly 使用的是AT&T的语法  
      1：源————目标的代买顺序  
      2：寄存器的前面要加上%： %eax，%esp  
      3：在AT&T中要表示一个 数值而不是表示一个地址需要加上符号$  
      4: 操作数的位宽是由operand的最后一位字符决定的，后缀是 b——8bit, w——16bit，l——32bit；    
      5：在intel 汇编中基础寄存器 enclosed in[],而在AT&T使用的是（）  
-     INTEL : section:[base + index*scale + disp], which changes  
-     AT&T : section:disp(base, index, scale) in AT&T.
+               INTEL : section:[base + index*scale + disp], which changes  
+               AT&T : section:disp(base, index, scale) in AT&T.
 ```
-     +------------------------------+------------------------------------+
++------------------------------+------------------------------------+
 |       Intel Code             |      AT&T Code                     |
 +------------------------------+------------------------------------+
 | mov     eax,1                |  movl    $1,%eax                   |   
@@ -23,4 +23,104 @@ mit的操作系统实验中需要看懂gcc_inline_assembly的代码，所以需�
 | sub     eax,[ebx+ecx*4h-20h] |  subl    -0x20(%ebx,%ecx,0x4),%eax |
 +------------------------------+------------------------------------+
 ```
-     
+###Basic inline  
+ 最简单的asm code：asm("assembly code"）  
+ ```
+ asm("movl %ecx %eax"); /* moves the contents of ecx to eax */
+__asm__("movb %bh (%eax)"); /*moves the byte from bh to the memory pointed by eax */\
+ ```
+
+
+###Extended ASM（can specify input output register and some clobbered register  
+```
+asm ( assembler template 
+           : output operands                  /* optional */
+           : input operands                   /* optional */
+           : list of clobbered registers      /* optional */
+           );
+//If there are no output operands but there are input operands
+//you must place two consecutive colons surrounding the place where the output operands would go.
+        
+        asm ("cld\n\t"
+             "rep\n\t"
+             "stosl"
+             : /* no output registers */
+             : "c" (count), "a" (fill_value), "D" (dest)
+             : "%ecx", "%edi" 
+             );
+
+
+       int a=10, b;           // a b c d e f g   referred by 7 6 5 4 3 2 1    
+        asm ("movl %1, %%eax; 
+              movl %%eax, %0;"
+             :"=r"(b)        /* output and must be lvalue */
+             :"r"(a)         /* input */
+             :"%eax"         /* clobbered register */
+             );这个代码是将b的值变成a的值
+```
+b是输出操作数，被%0引用,a是输出操作数referred by %1    
+r是表示for storing operands gcc can use any register，输出操作数必须要有限制符"=": it is output operand and read-only  
+在寄存器的前头有俩个%%而operand前面只能有一个%  
+:"%eax"告诉gcc 别用eax来存储any value  
+
+```
+ asm ("leal (%1,%1,4), %0"  //使用俩个寄存器 将输入扩大5倍然后输出
+             : "=r" (five_times_x)
+             : "r" (x) 
+             );
+ asm ("leal (%0,%0,4), %0" //输入输出是同一个寄存器
+             : "=r" (five_times_x)
+             : "0" (x) 
+             );
+  asm ("leal (%%ecx,%%ecx,4), %%ecx" //指明了所使用的寄存器是ecx
+             : "=c" (x)
+             : "c" (x) 
+             );          
+```
+
+###Clobber list (clobber 截断？)
+一些指令clobber某些hardware register. 我们需要将这些register写在第三行的  "："上  
+
+
+
+### 例子
+```
+int main(void)
+{
+        int foo = 10, bar = 15;
+        __asm__ __volatile__("addl  %%ebx,%%eax"
+                             :"=a"(foo)
+                             :"a"(foo), "b"(bar)
+                             );
+        printf("foo+bar=%d\n", foo);
+        return 0;
+}
+
+
+
+__asm__ __volatile__(
+                      "   lock       ;\n"  // lock代表了原子操作
+                      "   addl %1,%0 ;\n"  //
+                      : "=m"  (my_var)
+                      : "ir"  (my_int), "m" (my_var)
+                      :                                 /* no clobber-list */
+                      );
+
+```
+```
+Here the variable myval is kept in a register, the value in register eax is copied onto that register, and the value of myval is updated into the memory from this register. When the "r" constraint is specified, gcc may keep the variable in any of the available GPRs. To specify the register, you must directly specify the register names by using specific register constraints. They are:
+
++---+--------------------+
+| r |    Register(s)     |
++---+--------------------+
+| a |   %eax, %ax, %al   |
+| b |   %ebx, %bx, %bl   |
+| c |   %ecx, %cx, %cl   |
+| d |   %edx, %dx, %dl   |
+| S |   %esi, %si        |
+| D |   %edi, %di        |
++---+--------------------+
+```
+
+
+
